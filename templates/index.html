@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Campus Placement Prediction System using machine learning and Flask.">
+    <title>Campus Placement Prediction System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header class="site-header">
+        <nav class="navbar container">
+            <a href="#home" class="brand">
+                <span class="brand-mark">CP</span>
+                <span>Placement Analyst</span>
+            </a>
+
+            <button class="nav-toggle" aria-label="Open navigation menu" aria-expanded="false">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+
+            <div class="nav-links">
+                <a href="#home">Home</a>
+                <a href="#dashboard">Dashboard</a>
+                <a href="#predict">Predict Placement</a>
+                <a href="#performance">Model Performance</a>
+                <a href="#about">About</a>
+            </div>
+        </nav>
+    </header>
+
+    <main id="home">
+        <section class="hero container">
+            <div class="hero-copy">
+                <span class="eyebrow">Academic innovation project</span>
+                <h1>Campus Placement Prediction System</h1>
+                <p>
+                    This project helps students and academic teams estimate placement readiness using
+                    machine learning techniques based on academic performance, internship experience,
+                    projects, aptitude, and communication skills.
+                </p>
+                <div class="cta-row">
+                    <a href="#predict" class="btn btn-primary">Start Prediction</a>
+                    <a href="#dashboard" class="btn btn-secondary">View Dashboard</a>
+                </div>
+                <div class="hero-meta">
+                    <div>
+                        <strong>{{ model_name }}</strong>
+                        <span>selected model</span>
+                    </div>
+                    <div>
+                        <strong>{{ dashboard.data_label if dashboard and dashboard.data_label else 'Dataset available' }}</strong>
+                        <span>data source</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hero-panel">
+                <div class="panel-card glow-card">
+                    <h3>Project Snapshot</h3>
+                    <ul>
+                        <li>Machine learning model for placement readiness.</li>
+                        <li>Feature-based scoring using six academic indicators.</li>
+                        <li>Demo evaluation results shown where supported by project data.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="dashboard" class="section container">
+            <div class="section-heading">
+                <span class="eyebrow">Dashboard</span>
+                <h2>Student Dataset Overview</h2>
+            </div>
+
+            <div class="stats-grid">
+                <article class="stat-card accent">
+                    <span class="stat-label">Student count</span>
+                    <strong>{{ dashboard.student_count if dashboard and dashboard.student_count is not none else 'Unavailable' }}</strong>
+                </article>
+                <article class="stat-card">
+                    <span class="stat-label">Placement rate</span>
+                    <strong>{{ dashboard.placement_rate|round(2) if dashboard and dashboard.placement_rate is not none else 'Unavailable' }}{% if dashboard and dashboard.placement_rate is not none %}%{% endif %}</strong>
+                </article>
+                <article class="stat-card">
+                    <span class="stat-label">Average CGPA</span>
+                    <strong>{{ dashboard.average_cgpa if dashboard and dashboard.average_cgpa is not none else 'Unavailable' }}</strong>
+                </article>
+                <article class="stat-card">
+                    <span class="stat-label">Average aptitude</span>
+                    <strong>{{ dashboard.average_aptitude if dashboard and dashboard.average_aptitude is not none else 'Unavailable' }}</strong>
+                </article>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="panel-card chart-panel">
+                    <h3>Dataset summary</h3>
+                    <canvas id="datasetChart" aria-label="Dataset summary chart"></canvas>
+                </div>
+                <div class="panel-card info-panel">
+                    <h3>Data note</h3>
+                    {% if dashboard and dashboard.available %}
+                        <p>{{ dashboard.message }}</p>
+                    {% else %}
+                        <p>{{ dashboard.message if dashboard else 'The dataset or placement label is unavailable, so the dashboard uses a clear “unavailable” state instead of guessing.' }}</p>
+                    {% endif %}
+                    <div class="mini-badge">{{ dashboard.data_label if dashboard and dashboard.data_label else 'Dataset status unavailable' }}</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="predict" class="section container">
+            <div class="section-heading">
+                <span class="eyebrow">Prediction</span>
+                <h2>Student Placement Prediction</h2>
+            </div>
+
+            <div class="predict-layout">
+                <form action="/predict" method="POST" class="predict-form panel-card" novalidate>
+                    <div class="form-grid">
+                        <div class="field-group">
+                            <label for="cgpa">CGPA (0–10)</label>
+                            <input id="cgpa" name="cgpa" type="number" min="0" max="10" step="0.01" placeholder="e.g. 8.75" required>
+                        </div>
+
+                        <div class="field-group">
+                            <label for="backlogs">Number of backlogs</label>
+                            <input id="backlogs" name="backlogs" type="number" min="0" step="1" placeholder="0" required>
+                        </div>
+
+                        <div class="field-group">
+                            <label for="internships">Internships</label>
+                            <input id="internships" name="internships" type="number" min="0" step="1" placeholder="2" required>
+                        </div>
+
+                        <div class="field-group">
+                            <label for="projects">Projects completed</label>
+                            <input id="projects" name="projects" type="number" min="0" step="1" placeholder="3" required>
+                        </div>
+
+                        <div class="field-group">
+                            <label for="aptitude_score">Aptitude score (0–100)</label>
+                            <input id="aptitude_score" name="aptitude_score" type="number" min="0" max="100" step="1" placeholder="75" required>
+                        </div>
+
+                        <div class="field-group">
+                            <label for="communication_score">Communication score (0–100)</label>
+                            <input id="communication_score" name="communication_score" type="number" min="0" max="100" step="1" placeholder="82" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary submit-btn">
+                        <span class="btn-text">Predict Placement</span>
+                        <span class="spinner" aria-hidden="true"></span>
+                    </button>
+                </form>
+
+                <div class="result-column panel-card">
+                    <h3>Prediction result</h3>
+
+                    {% if error %}
+                        <div class="alert error-alert">
+                            <strong>Input error:</strong> {{ error }}
+                        </div>
+                    {% elif prediction is defined %}
+                        <div class="alert success-alert">
+                            <div class="result-header">
+                                <span class="status-dot"></span>
+                                <h4>{% if prediction == 1 %}Placed{% else %}Not Placed{% endif %}</h4>
+                            </div>
+
+                            {% if probability is not none %}
+                                <p class="probability-value">Model-estimated probability: <strong>{{ "%.2f"|format(probability) }}%</strong></p>
+                            {% else %}
+                                <p class="probability-value">Probability estimate is unavailable for the selected model.</p>
+                            {% endif %}
+
+                            <p class="disclaimer">
+                                This output is an estimate from the trained model and does not guarantee employment.
+                            </p>
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <p>Enter the required academic and skill details to generate a placement estimate.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <section id="performance" class="section container">
+            <div class="section-heading">
+                <span class="eyebrow">Model Performance</span>
+                <h2>Evaluation Results</h2>
+            </div>
+
+            {% if model_performance and model_performance.available %}
+                <div class="metric-grid">
+                    {% for metric in model_performance.metrics %}
+                        <div class="metric-card">
+                            <span class="metric-model">{{ metric['Model'] }}</span>
+                            <strong>{{ metric['Accuracy'] }}</strong>
+                            <small>Accuracy</small>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <div class="panel-card table-panel">
+                    <h3>Performance metrics by model</h3>
+                    <div class="table-wrap">
+                        <table class="performance-table">
+                            <thead>
+                                <tr>
+                                    <th>Model</th>
+                                    <th>Accuracy</th>
+                                    <th>Precision</th>
+                                    <th>Recall</th>
+                                    <th>F1-score</th>
+                                    <th>Training time (s)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for metric in model_performance.metrics %}
+                                <tr>
+                                    <td>{{ metric['Model'] }}</td>
+                                    <td>{{ metric['Accuracy'] }}</td>
+                                    <td>{{ metric['Precision'] }}</td>
+                                    <td>{{ metric['Recall'] }}</td>
+                                    <td>{{ metric['F1-score'] }}</td>
+                                    <td>{{ metric['Training time (seconds)'] }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="panel-card chart-panel large-panel">
+                    <h3>Model comparison chart</h3>
+                    <canvas id="performanceChart" aria-label="Model performance comparison chart"></canvas>
+                </div>
+            {% else %}
+                <div class="panel-card info-panel">
+                    <h3>Performance data unavailable</h3>
+                    <p>{{ model_performance.message if model_performance else 'No performance data is available in the project folder.' }}</p>
+                </div>
+            {% endif %}
+
+            <div class="source-note">
+                The project reads recorded model metrics from the existing CSV and clearly labels synthetic demonstration data when used. These values are not evidence of real-world placement accuracy.
+            </div>
+        </section>
+
+        <section id="about" class="section container">
+            <div class="section-heading">
+                <span class="eyebrow">About</span>
+                <h2>Project Overview</h2>
+            </div>
+
+            <div class="about-grid">
+                <div class="panel-card">
+                    <h3>Purpose</h3>
+                    <p>
+                        The Campus Placement Prediction System demonstrates how academic records and soft-skill
+                        metrics can be used to support placement readiness analysis with a beginner-friendly ML pipeline.
+                    </p>
+                </div>
+                <div class="panel-card">
+                    <h3>Selected model</h3>
+                    <p><strong>{{ model_name }}</strong></p>
+                    <p>Model features include CGPA, backlogs, internships, projects, aptitude, and communication score.</p>
+                </div>
+                <div class="panel-card">
+                    <h3>Important note</h3>
+                    <p>
+                        Predictions are estimates computed from the project dataset and should not be interpreted as
+                        a guarantee of future employment or a verified human-resource decision.
+                    </p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-inner">
+            <p>Campus Placement Prediction System</p>
+            <p>Built with Flask, Python, and Machine Learning</p>
+        </div>
+    </footer>
+
+    <script id="dashboard-data" type="application/json">{{ dashboard | tojson | safe }}</script>
+    <script id="model-performance-data" type="application/json">{{ model_performance | tojson | safe }}</script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
