@@ -5,3 +5,4 @@ flask
 matplotlib
 seaborn
 joblib
+gunicorn
