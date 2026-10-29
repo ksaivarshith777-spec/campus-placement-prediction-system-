@@ -6,21 +6,68 @@ from flask import Flask, render_template, request
 
 app = Flask(__name__)
 
+FEATURE_COLUMNS = [
+    "cgpa",
+    "backlogs",
+    "internships",
+    "projects",
+    "aptitude_score",
+    "communication_score",
+]
+
 BASE_DIR = Path(__file__).resolve().parent
 MODEL_PATH = BASE_DIR / "models" / "placement_model.joblib"
 DATASET_PATH = BASE_DIR / "dataset" / "student_placement_sample.csv"
 MODEL_COMPARISON_PATH = BASE_DIR / "dataset" / "model_comparison.csv"
 
-# Load the trained machine learning model once at startup.
-saved_model = joblib.load(MODEL_PATH)
-model = saved_model["model"]
-features = saved_model["features"]
-model_name = saved_model["model_name"]
-data_type = saved_model.get("data_type", "Available dataset")
+
+def load_model_bundle():
+    """Load the demo model when present and return a safe fallback otherwise."""
+    default = {
+        "model": None,
+        "features": FEATURE_COLUMNS,
+        "model_name": "Demo model unavailable",
+        "data_type": "synthetic demonstration data",
+        "available": False,
+        "message": "No trained model file was found. Run 'python train_model.py' to generate the demo model.",
+    }
+
+    if not MODEL_PATH.exists():
+        return default
+
+    try:
+        saved_model = joblib.load(MODEL_PATH)
+    except Exception as exc:  # pragma: no cover - defensive fallback for missing/corrupt files
+        default["message"] = f"The trained model could not be opened: {exc}"
+        return default
+
+    if not isinstance(saved_model, dict) or "model" not in saved_model or "features" not in saved_model:
+        default["message"] = "The saved model file is not in the expected format."
+        return default
+
+    features = saved_model["features"]
+    if list(features) != FEATURE_COLUMNS:
+        default["message"] = (
+            "The saved model feature order does not match the prediction form. "
+            "Expected: " + ", ".join(FEATURE_COLUMNS)
+        )
+        return default
+
+    saved_model["available"] = True
+    saved_model["message"] = "Demo model loaded successfully from the project folder. Results are synthetic and for demonstration only."
+    return saved_model
+
+
+MODEL_BUNDLE = load_model_bundle()
+model = MODEL_BUNDLE.get("model")
+features = MODEL_BUNDLE.get("features", FEATURE_COLUMNS)
+model_name = MODEL_BUNDLE.get("model_name", "Demo model unavailable")
+data_type = MODEL_BUNDLE.get("data_type", "synthetic demonstration data")
+model_message = MODEL_BUNDLE.get("message", "No model available.")
 
 
 def get_dataset_stats():
-    """Read the current CSV and return dashboard statistics when available."""
+    """Read the current CSV and return summary statistics when available."""
     if not DATASET_PATH.exists():
         return {
             "student_count": None,
@@ -70,7 +117,7 @@ def get_model_performance():
     if not MODEL_COMPARISON_PATH.exists():
         return {
             "available": False,
-            "message": "No model comparison file was found. Results will be displayed as unavailable.",
+            "message": "No model comparison file was found. Demo evaluation results will be displayed as unavailable.",
             "metrics": [],
         }
 
@@ -78,7 +125,7 @@ def get_model_performance():
     metrics = performance.to_dict(orient="records")
     return {
         "available": bool(metrics),
-        "message": "Performance values are sourced from the project evaluation CSV and may represent synthetic demonstration results.",
+        "message": "Performance values are sourced from the project evaluation CSV and represent synthetic demonstration results only.",
         "metrics": metrics,
     }
 
@@ -88,6 +135,7 @@ def home():
     return render_template(
         "index.html",
         model_name=model_name,
+        model_status=model_message,
         dashboard=get_dataset_stats(),
         model_performance=get_model_performance(),
     )
@@ -96,6 +144,13 @@ def home():
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
+        if model is None:
+            raise ValueError("No trained model is available. Run 'python train_model.py' to generate the synthetic demo model before predicting.")
+
+        missing_fields = [field for field in FEATURE_COLUMNS if field not in request.form or request.form[field] == ""]
+        if missing_fields:
+            raise ValueError("Please complete all required fields before predicting placement.")
+
         cgpa = float(request.form["cgpa"])
         backlogs = int(request.form["backlogs"])
         internships = int(request.form["internships"])
@@ -124,7 +179,7 @@ def predict():
                 "aptitude_score": aptitude_score,
                 "communication_score": communication_score,
             }
-        ], columns=features)
+        ], columns=FEATURE_COLUMNS)
 
         prediction = int(model.predict(student_data)[0])
 
@@ -136,6 +191,7 @@ def predict():
         return render_template(
             "index.html",
             model_name=model_name,
+            model_status=model_message,
             dashboard=get_dataset_stats(),
             model_performance=get_model_performance(),
             prediction=prediction,
@@ -146,6 +202,7 @@ def predict():
         return render_template(
             "index.html",
             model_name=model_name,
+            model_status=model_message,
             dashboard=get_dataset_stats(),
             model_performance=get_model_performance(),
             error=str(error),

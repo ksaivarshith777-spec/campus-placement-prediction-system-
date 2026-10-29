@@ -28,8 +28,6 @@
                 <a href="#home">Home</a>
                 <a href="#dashboard">Dashboard</a>
                 <a href="#predict">Predict Placement</a>
-                <a href="#performance">Model Performance</a>
-                <a href="#about">About</a>
             </div>
         </nav>
     </header>
@@ -40,35 +38,17 @@
                 <span class="eyebrow">Academic innovation project</span>
                 <h1>Campus Placement Prediction System</h1>
                 <p>
-                    This project helps students and academic teams estimate placement readiness using
-                    machine learning techniques based on academic performance, internship experience,
-                    projects, aptitude, and communication skills.
+                    Estimate placement readiness using academic performance, internship experience,
+                    projects, aptitude, and communication skills to support informed career planning.
                 </p>
                 <div class="cta-row">
                     <a href="#predict" class="btn btn-primary">Start Prediction</a>
-                    <a href="#dashboard" class="btn btn-secondary">View Dashboard</a>
                 </div>
-                <div class="hero-meta">
-                    <div>
-                        <strong>{{ model_name }}</strong>
-                        <span>selected model</span>
+                {% if model_status %}
+                    <div class="alert info-alert">
+                        <strong>Model status:</strong> {{ model_status }}
                     </div>
-                    <div>
-                        <strong>{{ dashboard.data_label if dashboard and dashboard.data_label else 'Dataset available' }}</strong>
-                        <span>data source</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="hero-panel">
-                <div class="panel-card glow-card">
-                    <h3>Project Snapshot</h3>
-                    <ul>
-                        <li>Machine learning model for placement readiness.</li>
-                        <li>Feature-based scoring using six academic indicators.</li>
-                        <li>Demo evaluation results shown where supported by project data.</li>
-                    </ul>
-                </div>
+                {% endif %}
             </div>
         </section>
 
@@ -193,97 +173,6 @@
             </div>
         </section>
 
-        <section id="performance" class="section container">
-            <div class="section-heading">
-                <span class="eyebrow">Model Performance</span>
-                <h2>Evaluation Results</h2>
-            </div>
-
-            {% if model_performance and model_performance.available %}
-                <div class="metric-grid">
-                    {% for metric in model_performance.metrics %}
-                        <div class="metric-card">
-                            <span class="metric-model">{{ metric['Model'] }}</span>
-                            <strong>{{ metric['Accuracy'] }}</strong>
-                            <small>Accuracy</small>
-                        </div>
-                    {% endfor %}
-                </div>
-
-                <div class="panel-card table-panel">
-                    <h3>Performance metrics by model</h3>
-                    <div class="table-wrap">
-                        <table class="performance-table">
-                            <thead>
-                                <tr>
-                                    <th>Model</th>
-                                    <th>Accuracy</th>
-                                    <th>Precision</th>
-                                    <th>Recall</th>
-                                    <th>F1-score</th>
-                                    <th>Training time (s)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for metric in model_performance.metrics %}
-                                <tr>
-                                    <td>{{ metric['Model'] }}</td>
-                                    <td>{{ metric['Accuracy'] }}</td>
-                                    <td>{{ metric['Precision'] }}</td>
-                                    <td>{{ metric['Recall'] }}</td>
-                                    <td>{{ metric['F1-score'] }}</td>
-                                    <td>{{ metric['Training time (seconds)'] }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="panel-card chart-panel large-panel">
-                    <h3>Model comparison chart</h3>
-                    <canvas id="performanceChart" aria-label="Model performance comparison chart"></canvas>
-                </div>
-            {% else %}
-                <div class="panel-card info-panel">
-                    <h3>Performance data unavailable</h3>
-                    <p>{{ model_performance.message if model_performance else 'No performance data is available in the project folder.' }}</p>
-                </div>
-            {% endif %}
-
-            <div class="source-note">
-                The project reads recorded model metrics from the existing CSV and clearly labels synthetic demonstration data when used. These values are not evidence of real-world placement accuracy.
-            </div>
-        </section>
-
-        <section id="about" class="section container">
-            <div class="section-heading">
-                <span class="eyebrow">About</span>
-                <h2>Project Overview</h2>
-            </div>
-
-            <div class="about-grid">
-                <div class="panel-card">
-                    <h3>Purpose</h3>
-                    <p>
-                        The Campus Placement Prediction System demonstrates how academic records and soft-skill
-                        metrics can be used to support placement readiness analysis with a beginner-friendly ML pipeline.
-                    </p>
-                </div>
-                <div class="panel-card">
-                    <h3>Selected model</h3>
-                    <p><strong>{{ model_name }}</strong></p>
-                    <p>Model features include CGPA, backlogs, internships, projects, aptitude, and communication score.</p>
-                </div>
-                <div class="panel-card">
-                    <h3>Important note</h3>
-                    <p>
-                        Predictions are estimates computed from the project dataset and should not be interpreted as
-                        a guarantee of future employment or a verified human-resource decision.
-                    </p>
-                </div>
-            </div>
-        </section>
     </main>
 
     <footer class="site-footer">

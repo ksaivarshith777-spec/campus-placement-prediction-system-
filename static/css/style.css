@@ -422,6 +422,13 @@ canvas {
 .alert {
   border-radius: 18px;
   padding: 18px;
+  margin-top: 18px;
+}
+
+.info-alert {
+  background: rgba(239, 246, 255, 0.9);
+  border-left: 4px solid var(--primary);
+  color: var(--secondary);
 }
 
 .error-alert {
